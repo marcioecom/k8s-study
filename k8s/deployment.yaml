@@ -16,18 +16,18 @@ spec:
     spec:
       containers:
         - name: "goserver"
-          image: "marcioecom/hello-go:v2"
+          image: "marcioecom/hello-go:v3"
           envFrom:
             - configMapRef:
                 name: goserver-env
-          # env:
-          #   - name: NAME
-          #     valueFrom:
-          #       configMapKeyRef:
-          #         name: goserver-env
-          #         key: NAME
-          #   - name: AGE
-          #     valueFrom:
-          #       configMapKeyRef:
-          #         name: goserver-env
-          #         key: AGE
+          volumeMounts:
+            - mountPath: "/go/src/app/myskills"
+              name: config
+
+      volumes:
+        - name: config
+          configMap:
+            name: configmap-skills
+            items:
+              - key: languages
+                path: "skills.txt"
