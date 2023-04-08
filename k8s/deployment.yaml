@@ -17,8 +17,17 @@ spec:
       containers:
         - name: "goserver"
           image: "marcioecom/hello-go:v2"
-          env:
-            - name: NAME
-              value: "Márcio"
-            - name: AGE
-              value: "19"
+          envFrom:
+            - configMapRef:
+                name: goserver-env
+          # env:
+          #   - name: NAME
+          #     valueFrom:
+          #       configMapKeyRef:
+          #         name: goserver-env
+          #         key: NAME
+          #   - name: AGE
+          #     valueFrom:
+          #       configMapKeyRef:
+          #         name: goserver-env
+          #         key: AGE
