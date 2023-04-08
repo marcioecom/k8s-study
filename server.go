@@ -10,6 +10,7 @@ import (
 func main() {
 	http.HandleFunc("/", hello)
 	http.HandleFunc("/configmap", configMap)
+	http.HandleFunc("/secret", secret)
 	http.ListenAndServe(":3000", nil)
 }
 
@@ -27,4 +28,11 @@ func configMap(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "My skills: %s", string(data))
+}
+
+func secret(w http.ResponseWriter, r *http.Request) {
+	user := os.Getenv("USER")
+	pass := os.Getenv("PASS")
+
+	fmt.Fprintf(w, "user: %s password: %s", user, pass)
 }

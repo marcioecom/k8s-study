@@ -16,10 +16,13 @@ spec:
     spec:
       containers:
         - name: "goserver"
-          image: "marcioecom/hello-go:v3"
+          image: "marcioecom/hello-go:v4"
           envFrom:
             - configMapRef:
                 name: goserver-env
+            - secretRef:
+                name: goserver-secret
+
           volumeMounts:
             - mountPath: "/go/src/app/myskills"
               name: config
