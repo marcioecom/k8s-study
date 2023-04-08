@@ -23,6 +23,7 @@ spec:
           volumeMounts:
             - mountPath: "/go/src/app/myskills"
               name: config
+              readOnly: true
 
       volumes:
         - name: config
