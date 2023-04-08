@@ -8,5 +8,6 @@ spec:
   type: ClusterIP
   ports:
     - name: goserver-service
-      port: 3000
+      port: 8080
+      targetPort: 3000
       protocol: TCP
