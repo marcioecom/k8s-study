@@ -5,12 +5,16 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
+
+var startedAt = time.Now()
 
 func main() {
 	http.HandleFunc("/", hello)
 	http.HandleFunc("/configmap", configMap)
 	http.HandleFunc("/secret", secret)
+	http.HandleFunc("/healthz", healthz)
 	http.ListenAndServe(":3000", nil)
 }
 
@@ -35,4 +39,15 @@ func secret(w http.ResponseWriter, r *http.Request) {
 	pass := os.Getenv("PASS")
 
 	fmt.Fprintf(w, "user: %s password: %s", user, pass)
+}
+
+func healthz(w http.ResponseWriter, r *http.Request) {
+	uptime := time.Since(startedAt)
+	if uptime.Seconds() > 25 {
+		w.WriteHeader(500)
+		w.Write([]byte(fmt.Sprintf("Uptime: %v", uptime.Seconds())))
+	} else {
+		w.WriteHeader(200)
+		w.Write([]byte("OK"))
+	}
 }
