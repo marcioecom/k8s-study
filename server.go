@@ -43,7 +43,7 @@ func secret(w http.ResponseWriter, r *http.Request) {
 
 func healthz(w http.ResponseWriter, r *http.Request) {
 	uptime := time.Since(startedAt)
-	if uptime.Seconds() > 25 {
+	if uptime.Seconds() < 10 {
 		w.WriteHeader(500)
 		w.Write([]byte(fmt.Sprintf("Uptime: %v", uptime.Seconds())))
 	} else {
