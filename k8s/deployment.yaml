@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: "goserver"
-          image: "marcioecom/hello-go:v7.1"
+          image: "marcioecom/hello-go:v7.2"
 
           resources:
             requests:
