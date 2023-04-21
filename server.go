@@ -15,7 +15,9 @@ func main() {
 	http.HandleFunc("/configmap", configMap)
 	http.HandleFunc("/secret", secret)
 	http.HandleFunc("/healthz", healthz)
-	http.ListenAndServe(":3000", nil)
+	if err := http.ListenAndServe(":3000", nil); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func hello(w http.ResponseWriter, r *http.Request) {
