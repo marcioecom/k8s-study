@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: "goserver"
-          image: "marcioecom/hello-go:v7.2"
+          image: "marcioecom/hello-go:v7.1"
 
           resources:
             requests:
@@ -59,8 +59,14 @@ spec:
             - mountPath: "/go/src/app/myskills"
               name: config
               readOnly: true
+            - mountPath: "/go/src/app/pvc"
+              name: goserver-volume
 
       volumes:
+        - name: goserver-volume
+          persistentVolumeClaim:
+            claimName: goserver-pvc
+
         - name: config
           configMap:
             name: configmap-skills
