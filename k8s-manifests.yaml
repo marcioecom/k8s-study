@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
         - name: api-container
-          image: ghcr.io/seu-usuario/sua-api-go:latest # <-- Substitua aqui
+          image: ghcr.io/marioecom/sua-api-go:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
