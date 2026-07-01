@@ -1,0 +1,137 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: meu-app-go
+---
+# 1. ConfigMap: Guarda dados não-sensíveis (Variáveis de ambiente e arquivos de texto)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+  namespace: meu-app-go
+data:
+  NAME: "Marcio"
+  AGE: "28"
+  skills.txt: |
+    - Go Lang
+    - Kubernetes / K3s
+    - Docker
+    - Tailscale
+---
+# 2. Secret: Guarda dados sensíveis mascarados em Base64
+# Para gerar novos valores: echo -n 'meu_usuario' | base64
+apiVersion: v1
+kind: Secret
+metadata:
+  name: api-secret
+  namespace: meu-app-go
+type: Opaque
+data:
+  USER: bWV1X3VzdWFyaW8= # "meu_usuario" em base64
+  PASS: bWluaGFfc2VuaGE= # "minha_senha" em base64
+---
+# 3. Deployment: Gerencia os Pods da sua aplicação
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-deployment
+  namespace: meu-app-go
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-go
+  template:
+    metadata:
+      labels:
+        app: api-go
+    spec:
+      containers:
+        - name: api-container
+          image: ghcr.io/seu-usuario/sua-api-go:latest # <-- Substitua aqui
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+
+          # Liveness & Readiness Probes usando a rota /healthz do seu código
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 12 # Seu código falha nos primeiros 10 segundos propositalmente
+            periodSeconds: 5
+
+          # Injetando as variáveis de ambiente normais e do Secret
+          env:
+            - name: NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: NAME
+            - name: AGE
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: AGE
+            - name: USER
+              valueFrom:
+                secretKeyRef:
+                  name: api-secret
+                  key: USER
+            - name: PASS
+              valueFrom:
+                secretKeyRef:
+                  name: api-secret
+                  key: PASS
+
+          # Montando o arquivo txt exigido pela rota /configmap
+          volumeMounts:
+            - name: config-volume
+              mountPath: /myskills
+
+      volumes:
+        - name: config-volume
+          configMap:
+            name: api-config
+            items:
+              - key: skills.txt
+                path: skills.txt
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-service
+  namespace: meu-app-go
+spec:
+  selector:
+    app: api-go
+  ports:
+    - protocol: TCP
+      port: 80 # Porta que o Service vai expor internamente
+      targetPort: 3000 # Porta do container Go
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api-ingress
+  namespace: meu-app-go
+  annotations:
+    ingress.kubernetes.io/ssl-redirect: "false" # Cloudflare pode cuidar do SSL por fora
+spec:
+  rules:
+    - host: sua-api.marcio.run # <-- Seu subdomínio automático (Wildcard)
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api-service
+                port:
+                  number: 80

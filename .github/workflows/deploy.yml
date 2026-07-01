@@ -1,0 +1,82 @@
+name: CD - Deploy to K3s
+
+on:
+  push:
+    branches: ["main"] # Dispara o deploy sempre que houver push na branch main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }} # Ex: seu-usuario/sua-api-go
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    # Permissões necessárias para ler o código e publicar no GitHub Packages (GHCR)
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1. Autenticar no GitHub Container Registry (GHCR)
+      - name: Log in to the Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2. Extrair metadados (tags, labels) para o Docker
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,format=short
+            type=raw,value=latest
+
+      # 3. Buildar a imagem Docker e enviar para o GHCR
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ id.meta.outputs.tags }}
+          labels: ${{ id.meta.outputs.labels }}
+
+      # 4. Conectar na rede privada do Tailscale
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-secret: "" # Não necessário usando auth key direta
+          authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
+
+      # 5. Configurar o Kubeconfig no runner do GitHub
+      - name: Setup Kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_DATA }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      # 6. Instalar o Kubectl no runner
+      - name: Setup Kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: "v1.36.2" # Versão compatível com o seu K3s instalado
+
+      # 7. Aplicar os manifestos e forçar o reinício dos Pods (Efeito PaaS instantâneo)
+      - name: Deploy to K3s
+        run: |
+          # Substitui a string 'latest' no manifesto pela tag com o hash do commit atual, se desejar imutabilidade,
+          # ou apenas aplica o arquivo caso use a tag :latest com a política AlwaysPull.
+          kubectl apply -f k8s-manifests.yaml
+
+          # Como usamos a tag :latest, forçamos o K3s a atualizar os pods com a nova imagem que acabou de subir
+          kubectl rollout restart deployment/api-deployment -n meu-app-go
+
+          # Aguarda o deploy finalizar com sucesso
+          kubectl rollout status deployment/api-deployment -n meu-app-go --timeout=60s
