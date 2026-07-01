@@ -122,10 +122,10 @@ metadata:
   name: api-ingress
   namespace: meu-app-go
   annotations:
-    ingress.kubernetes.io/ssl-redirect: "false" # Cloudflare pode cuidar do SSL por fora
+    kubernetes.io/ingress.class: "traefik"
 spec:
   rules:
-    - host: sua-api.marcio.run # <-- Seu subdomínio automático (Wildcard)
+    - host: sua-api.marcio.run
       http:
         paths:
           - path: /
