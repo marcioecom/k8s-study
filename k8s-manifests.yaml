@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
         - name: api-container
-          image: ghcr.io/marioecom/sua-api-go:latest
+          image: ghcr.io/marioecom/k8s-study:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
